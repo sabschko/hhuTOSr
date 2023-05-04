@@ -57,6 +57,12 @@ pub extern fn startup() {
 
 //    aufgabe1();
     aufgabe2();
+
+	//cga::clear();
+	
+
+
+    aufgabe1();
     
     loop{}
 }
