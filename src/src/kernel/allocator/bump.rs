@@ -14,11 +14,16 @@
 use super::{align_up, Locked};
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::ptr;
+use crate::devices::cga_print;
 
 
 pub struct BumpAllocator {
+   heap_start: usize,
+   heap_end: usize,
+   next: usize,
+   allocations: usize,
 
-   /* Hier muss Code eingefuegt werden */
+  
    
 }
 
@@ -26,7 +31,12 @@ impl BumpAllocator {
     // Creates a new empty bump allocator.
     pub const fn new() -> Self {
 
-       /* Hier muss Code eingefuegt werden */
+      BumpAllocator {
+         heap_start: 0,
+         heap_end: 0,
+         next: 0, 
+         allocations: 0,
+     }
 
     }
 
@@ -37,21 +47,37 @@ impl BumpAllocator {
      *  memory range is unused. Also, this method must be called only once.
      */
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
-
-       /* Hier muss Code eingefuegt werden */
+      self.heap_start = heap_start;
+      self.heap_end = heap_start + heap_size;
+      self.next = heap_start;
 
     }
 
     // Dump free list
     pub fn dump_free_list(&mut self) {
+      println!("BumpAllocator: heap_start={:#x}, heap_end={:#x}, next={:#x}, allocations={}", 
+         self.heap_start, self.heap_end, self.next, self.allocations);
 
-       /* Hier muss Code eingefuegt werden */
  		
 	}
 
    pub unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
 
-       /* Hier muss Code eingefuegt werden */
+     // let mut bump = self.lock(); // get a mutable reference
+
+      let alloc_start = align_up(self.next, layout.align());
+      let alloc_end = match alloc_start.checked_add(layout.size()) {
+          Some(end) => end,
+          None => return ptr::null_mut(),
+      };
+
+      if alloc_end > self.heap_end {
+          ptr::null_mut() // out of memory
+      } else {
+          self.next = alloc_end;
+          self.allocations += 1;
+          alloc_start as *mut u8
+      }
 
    }
    

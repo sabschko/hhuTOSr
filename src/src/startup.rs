@@ -43,7 +43,9 @@ fn aufgabe1() {
 }
 
 fn aufgabe2() {
+    cga::clear();
    heap_demo::run();
+
    sound_demo::run();
 }
 
@@ -62,7 +64,7 @@ pub extern fn startup() {
 	
 
 
-    aufgabe1();
+    //aufgabe1();
     
     loop{}
 }

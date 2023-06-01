@@ -25,18 +25,30 @@ fn wait_for_return() {
 }
 
 
-fn demo() {
+fn demo() { 
 
-    /* Hier muss Code eingefuegt werden */
+    println!("Demo: Heap");
+    //let test = Box::new(34);
+    //allocator::dump_free_list();
+    let mut v = Vec::new();
 
-    // free heap allocated struct before return
+
+    for i in 0..10{ 
+        v.push(i);
+        allocator::dump_free_list();
+        
+
+    }
+    allocator::dump_free_list();
+    wait_for_return();
+
 }
 
 
 
 pub fn run () {
-
-    demo();
+    allocator::init();
+    //demo();
 
     /* Hier muss Code eingefuegt werden */
 

@@ -74,15 +74,25 @@ impl LinkedListAllocator {
     // This method must be called only once.
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
 
-       /* Hier muss Code eingefuegt werden */
+        self.add_free_block(heap_start, heap_size);
+        self.heap_start = heap_start;
+        self.heap_end = heap_start + heap_size;
 
     }
 
 
     // Adds the given free memory block 'addr' to the front of the free list.
     unsafe fn add_free_block(&mut self, addr: usize, size: usize) {
-		
-       /* Hier muss Code eingefuegt werden */
+        // ensure that the freed region is capable of holding ListNode
+        assert_eq!(align_up(addr, mem::align_of::<ListNode>()), addr);
+        assert!(size >= mem::size_of::<ListNode>());
+
+        // create a new list node and append it at the start of the list
+        let mut node = ListNode::new(size);
+        node.next = self.head.next.take();
+        let node_ptr = addr as *mut ListNode;
+        node_ptr.write(node);
+        self.head.next = Some(&mut *node_ptr)
 
     }
     
@@ -94,8 +104,34 @@ impl LinkedListAllocator {
     fn find_free_block(&mut self, size: usize, align: usize)
         -> Option<(&'static mut ListNode)>
     {
+        
+        let mut current = &mut self.head;
 
-       /* Hier muss Code eingefuegt werden */
+        while current.next.is_some() {
+
+            // We have guarantee with loop predicate that current.next is not None
+            let region = current.next.as_mut().unwrap();
+
+            // [current] -> [region] -> [region.next] 
+            if let Ok(allocation_start) = Self::check_block_for_alloc(&region, size, align){
+                // [current] -> [region] -x- [region.next]
+                let next = region.next.take();
+                // [current] -x- [region] -x- [region.next]
+                let ret = Some(current.next.take().unwrap());
+                // [current] -- [region] ->  [region.next]
+                // Transfer and regions next pointer to current.
+                // Thereby isolating region from the free list ergo. deleting it.
+                current.next = next;
+                return ret;
+            } else {
+                current = current.next.as_mut().unwrap();
+            }
+
+        }
+
+        return None
+    
+
 
     }
     
@@ -108,16 +144,42 @@ impl LinkedListAllocator {
         -> Result<usize, ()>
     {
 
-       /* Hier muss Code eingefuegt werden */
+        let alloc_start = align_up(block.start_addr(), align);
+        let alloc_end = alloc_start.checked_add(size).ok_or(())?;
+
+        if alloc_end > block.end_addr() {
+            // region too small
+            return Err(());
+        }
+
+        let excess_size = block.end_addr() - alloc_end;
+        if excess_size > 0 && excess_size < mem::size_of::<ListNode>() {
+            // rest of region too small to hold a ListNode (required because the
+            // allocation splits the region in a used and a free part)
+            return Err(());
+        }
+
+        // region suitable for allocation
+        Ok(alloc_start)
 
     }
 
 
     // Dump free list
     pub fn dump_free_list(&mut self) {
+        let mut current = &mut self.head;
+        println!("Heap-Start: 0x{:x}, Heap-End: 0x{:x}", 
+            self.heap_start, 
+            self.heap_end);
 
-       /* Hier muss Code eingefuegt werden */
-
+        while current.next.is_some(){
+            current = current.next.as_mut().unwrap();
+            println!("Block-Start: 0x{:x}, Block-End: 0x{:x}, Block-Groesse:{}", 
+                current.start_addr(), 
+                current.end_addr(), 
+                current.size);
+            
+        }
     }
 
     

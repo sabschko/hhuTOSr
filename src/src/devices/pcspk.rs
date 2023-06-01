@@ -17,9 +17,20 @@ use crate::kernel::cpu as cpu;
 
 
 // Ports
+//This port is used to control the Programmable Interval Timer (PIT) chip.
+//It is used to configure the timer mode and select the desired channel
 const PORT_CTRL:u16  = 0x43;
+
+//This port is used to access the data register of Channel 0 of the PIT. 
+//It is used to load the counter value and read the current count.
 const PORT_DATA0:u16 = 0x40;
+
+//This port is used to access the data register of Channel 2 of the PIT.
+//It is used to load the counter value for generating sound.
 const PORT_DATA2:u16 = 0x42;
+
+//This port is used to control the Programmable Peripheral Interface (PPI). 
+//It is used to enable or disable the PC speaker.
 const PORT_PPI:u16   = 0x61;
 
 
@@ -88,6 +99,8 @@ pub fn play (f: f32, len: u32) {
     status = cpu::inb(PORT_PPI);	    // Status-Register des PPI auslesen
     cpu::outb(PORT_PPI, status | 3);    // Lautpsrecher Einschalten
 
+    println!("Lautsprecher einschalten");
+
     // Pause
     delay(len);
     
@@ -121,11 +134,20 @@ pub fn off () {
 fn read_counter() -> u32 {
     let lo:u8;
     let hi:u8;
-    
+
+    //It sends a latch command (0x0) to the control port (PORT_CTRL) to latch the count value.
     cpu::outb(PORT_CTRL, 0x0);	        // Latch Command
+
+   	//It reads the low byte of the count value from the data register (PORT_DATA0).
     lo = cpu::inb(PORT_DATA0);	        // Lobyte des Counters auslesen
+
+    //It reads the high byte of the count value from the data register (PORT_DATA0).
     hi = cpu::inb(PORT_DATA0);	        // Hibyte des Counters auslesen
 
+    //performs a conversion and bitwise operation to construct a 32-bit counter value from two 8-bit values representing the high and low bytes.
+    //<< 8 shifts the binary representation of the hi value 8 bits to the left. In other words, it effectively multiplies hi by 2^8 (256) because each left shift by 1 bit corresponds to multiplying the number by 2. This step is performed to place the bits of the hi value in the higher-order bits of the resulting 32-bit value.
+    //(hi as u32) << 8) | (lo as u32) performs a bitwise OR (|) operation between the shifted hi value and the lo value. The | operator performs a binary OR operation on each corresponding pair of bits. The result is a new u32 value where the bits from hi occupy the higher-order bits, and the bits from lo occupy the lower-order bits.
+    //Finally, the resulting combined 32-bit counter is returned from the function
     return ((hi as u32) << 8) | (lo as u32);
 }
 
@@ -139,11 +161,57 @@ fn read_counter() -> u32 {
  *                                                                           *
  * Parameter:       time (delay in ms)                                       *
  *****************************************************************************/
-fn delay (mut time: u32) {
+ fn delay(mut time: u32) {
+    /* 
 
-   /* Hier muss Code eingefuegt werden */
-   
+    let mut counter: u32;
+    let mut start: u32;
+    let mut end: u32;
+    let mut diff: u32;
+ 
+        
+    // Zaehler laden
+    counter = read_counter();
+    
+    // Startzeit merken
+    start = counter;
+    
+    // Endzeit berechnen
+    end = start - (time * 1193);
+    
+    // Endzeit erreicht?
+    while counter > end {
+        // Zaehler lesen
+        counter = read_counter();
+        
+        // Unterschied berechnen
+        diff = start - counter;
+        
+        // Unterschied zu gross?
+        if diff > 1193 {
+            // Zaehler neu laden
+            start = counter;
+        }
+    }
+    */
+    let mut counter = u16::MAX as u32 - read_counter();
+    let mut now = counter;
+    let end = now + time * 1193;
+
+    let mut last: u32;
+
+    while counter < end {
+        last = now;
+        now = u16::MAX as u32 - read_counter();
+        counter += if last > now {
+            u16::MAX as u32 - last + now
+        } else {
+            now - last
+        }
+    }
+    println!("Waited for {} ms", (time * 1193));
 }
+
 
 
 /*****************************************************************************
