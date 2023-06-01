@@ -52,7 +52,6 @@ fn aufgabe2() {
 }
 
 
-
 #[no_mangle]
 pub extern fn startup() {
 	
