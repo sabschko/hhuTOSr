@@ -162,8 +162,6 @@ fn read_counter() -> u32 {
  * Parameter:       time (delay in ms)                                       *
  *****************************************************************************/
  fn delay(mut time: u32) {
-    /* 
-
     let mut counter: u32;
     let mut start: u32;
     let mut end: u32;
@@ -193,23 +191,6 @@ fn read_counter() -> u32 {
             start = counter;
         }
     }
-    */
-    let mut counter = u16::MAX as u32 - read_counter();
-    let mut now = counter;
-    let end = now + time * 1193;
-
-    let mut last: u32;
-
-    while counter < end {
-        last = now;
-        now = u16::MAX as u32 - read_counter();
-        counter += if last > now {
-            u16::MAX as u32 - last + now
-        } else {
-            now - last
-        }
-    }
-    println!("Waited for {} ms", (time * 1193));
 }
 
 
